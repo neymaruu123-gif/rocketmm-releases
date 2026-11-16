@@ -1,0 +1,8 @@
+{
+  "versionCode": 10,
+  "versionName": "0.4.4",
+  "apkUrl": "https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.4.4.apk",
+  "sha256": "84d483ef569f39cc20a93b0d03253dd14b8b659b857f813735a2972e091c69f8",
+  "notes": "SSH: Google, Facebook and YouTube fixed (IPv6). Automatic update channel. Diagnostics.",
+  "mandatory": false
+}
