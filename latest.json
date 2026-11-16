@@ -1,8 +1,8 @@
 {
-  "versionCode": 10,
-  "versionName": "0.4.4",
-  "apkUrl": "https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.4.4.apk",
-  "sha256": "84d483ef569f39cc20a93b0d03253dd14b8b659b857f813735a2972e091c69f8",
-  "notes": "SSH: Google, Facebook and YouTube fixed (IPv6). Automatic update channel. Diagnostics.",
+  "versionCode": 11,
+  "versionName": "0.4.5",
+  "apkUrl": "https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.4.5.apk",
+  "sha256": "ae4aa0ca688e17f253913b852cde8a2d78d30d99b0ce0898d9c7b9cba0189387",
+  "notes": "Update check and server sync now work through the VPN (free-data networks). Faster update check with Cancel.",
   "mandatory": false
 }
