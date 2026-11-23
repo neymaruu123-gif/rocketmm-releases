@@ -6,4 +6,4 @@ offers these.
 
 | File | SHA-256 |
 |---|---|
-| RocketMM-0.7.0-debug.apk | 3b2bd9372b2644fe3dc6fdb23cbcdbb4a24c57525b33597932a0b59705ded155 |
+| RocketMM-0.7.0-debug.apk | bcf218906637154442fa6f38896384c6bbfaa5691119bf520d60db95848de46a |
