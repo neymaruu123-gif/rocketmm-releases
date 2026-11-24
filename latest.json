@@ -1,8 +1,8 @@
 {
-  "versionCode": 116,
-  "versionName": "0.8.1 (116)",
-  "apkUrl": "https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.8.1-116.apk",
-  "sha256": "c8e38287b403afb8cb4aac1625039f840bb21e8855d574ca6cc133fc445f01ef",
-  "notes": "New design, network tabs (Dtac / TrueMove / AIS / Myanmar Wifi), free data card.",
+  "versionCode": 118,
+  "versionName": "0.8.1 (118)",
+  "apkUrl": "https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.8.1-118.apk",
+  "sha256": "1783333a352e42e96c306dafc5fb49ddecd66ad9576157ce34ba06b37b1a69ca",
+  "notes": "Trial uses the 1 GB data bar; only a VIP code is unlimited. Tap Ping to test. Light/Dark mode. Faster startup checks.",
   "mandatory": false
 }
