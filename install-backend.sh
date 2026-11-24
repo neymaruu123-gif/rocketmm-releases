@@ -6,6 +6,11 @@
 #
 # Safe to re-run: it updates the code and keeps the database, secrets and certificates.
 # It refuses to start (and changes nothing) if ports 80/443 are used by something else.
+#
+# Moving to a new server (same domain, apps keep working): copy the old server's .env and a
+# `rocketmm backup` file to the new one, then run with
+#   RESTORE_ENV=/root/rocketmm-backup/.env RESTORE_SQL=/root/rocketmm-backup/backup-....sql.gz
+# (only on a server without RocketMM yet), and point the domain's DNS to the new IP.
 set -euo pipefail
 
 DOMAIN=${DOMAIN:-yethiha101.dpdns.org}
@@ -39,7 +44,15 @@ or stop that service first."
 fi
 
 # ---- 2. the signing key decides which apps accept this server: check it before touching anything
-if [ -f "$DIR/.env" ] && grep -q '^MANIFEST_SIGNING_KEY=.\+' "$DIR/.env"; then
+if [ -n "${RESTORE_ENV:-}${RESTORE_SQL:-}" ]; then
+  [ ! -f "$DIR/.env" ] || fail "RESTORE_ENV/RESTORE_SQL are only for a new server, but $DIR/.env already exists here.
+To load a backup into this server use:  rocketmm restore <backup.sql.gz>"
+  [ -n "${RESTORE_ENV:-}" ] && [ -f "$RESTORE_ENV" ] || fail "RESTORE_ENV must point to the old server's .env file (it holds the keys)."
+  grep -q '^MANIFEST_SIGNING_KEY=.\+' "$RESTORE_ENV" || fail "$RESTORE_ENV has no MANIFEST_SIGNING_KEY - is it the right file?"
+  grep -q '^SECRETS_KEY=.\+' "$RESTORE_ENV" || fail "$RESTORE_ENV has no SECRETS_KEY - is it the right file?"
+  [ -z "${RESTORE_SQL:-}" ] || [ -f "$RESTORE_SQL" ] || fail "RESTORE_SQL not found: $RESTORE_SQL"
+  [ -z "${RESTORE_SQL:-}" ] || gzip -t "$RESTORE_SQL" 2>/dev/null || fail "RESTORE_SQL is not a valid .sql.gz backup."
+elif [ -f "$DIR/.env" ] && grep -q '^MANIFEST_SIGNING_KEY=.\+' "$DIR/.env"; then
   : # already configured; keep it
 else
   [ -n "${MANIFEST_SIGNING_KEY:-}" ] || fail "MANIFEST_SIGNING_KEY is required on first install (from rocketmm-manifest-signing-key.txt)."
@@ -77,7 +90,13 @@ mv "$DIR/backend.new" "$DIR/backend"
 cp "$tmp/bundle/docker-compose.yml" "$tmp/bundle/Caddyfile" "$DIR/"
 cp "$tmp/bundle/VERSION" "$DIR/VERSION" 2>/dev/null || true
 
-# ---- 5. secrets: generated once on this server, never leave it
+# ---- 5. secrets: generated once on this server, never leave it (or moved from the old server)
+if [ ! -f "$DIR/.env" ] && [ -n "${RESTORE_ENV:-}" ]; then
+  say "Using the keys from the old server"
+  umask 077
+  cp "$RESTORE_ENV" "$DIR/.env"
+  sed -i "s/^HTTP_PORT=.*/HTTP_PORT=$HTTP_PORT/; s/^HTTPS_PORT=.*/HTTPS_PORT=$HTTPS_PORT/" "$DIR/.env"
+fi
 if [ ! -f "$DIR/.env" ]; then
   say "Generating secrets"
   umask 077
@@ -100,6 +119,17 @@ if command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q 'Status: active
 fi
 say "Building and starting (first time takes a few minutes)"
 build_flag=--build; [ -z "${ROCKETMM_NO_BUILD:-}" ] || build_flag=--no-build   # tests only: use a prebuilt image
+if [ -n "${RESTORE_SQL:-}" ]; then
+  say "Restoring the database backup"
+  compose --env-file "$DIR/.env" up -d db
+  for i in $(seq 1 40); do compose exec -T db pg_isready -U rocketmm -d rocketmm >/dev/null 2>&1 && break; sleep 2; done
+  tables=$(compose exec -T db psql -U rocketmm -d rocketmm -tAc "select count(*) from information_schema.tables where table_schema='public'")
+  [ "${tables//[[:space:]]/}" = 0 ] || fail "The database on this server is not empty; nothing was restored."
+  gunzip -c "$RESTORE_SQL" | compose exec -T db psql -U rocketmm -d rocketmm -v ON_ERROR_STOP=1 -q >/dev/null \
+    || fail "Restoring $RESTORE_SQL failed (see the error above)."
+  touch "$DIR/.admin-created"   # the admin accounts came with the backup
+  echo "restored: $(compose exec -T db psql -U rocketmm -d rocketmm -tAc 'select count(*) from "Server"') servers, $(compose exec -T db psql -U rocketmm -d rocketmm -tAc 'select count(*) from "Subscription"') codes/tokens"
+fi
 compose --env-file "$DIR/.env" up -d $build_flag --remove-orphans
 say "Waiting for the backend"
 ok=0
@@ -122,15 +152,19 @@ fi
 # ---- 8. helper commands
 cat > /usr/local/bin/rocketmm <<HELP
 #!/usr/bin/env bash
-# rocketmm status | logs | restart | backup | add-admin <email> [admin|editor|viewer]
+# rocketmm status | logs | restart | backup | restore <file> | add-admin <email> [admin|editor|viewer]
 cd "$DIR"; c() { docker compose --project-directory "$DIR" -p rocketmm --env-file "$DIR/.env" "\$@"; }
 case "\${1:-status}" in
   status)  c ps ;;
   logs)    c logs --tail "\${2:-100}" -f backend ;;
   restart) c restart ;;
   backup)  f="$DIR/backup-\$(date +%Y%m%d-%H%M%S).sql.gz"; c exec -T db pg_dump -U rocketmm rocketmm | gzip > "\$f"; chmod 600 "\$f"; echo "saved \$f (also back up $DIR/.env: it holds the keys that decrypt it)" ;;
+  restore) [ -f "\${2:-}" ] || { echo "usage: rocketmm restore <backup.sql.gz>"; exit 2; }
+           read -r -p "This REPLACES everything in the database with \$2. Type yes: " a; [ "\$a" = yes ] || exit 1
+           c stop backend && c exec -T db psql -U rocketmm -d rocketmm -qc 'drop schema public cascade; create schema public;' \
+             && gunzip -c "\$2" | c exec -T db psql -U rocketmm -d rocketmm -v ON_ERROR_STOP=1 -q >/dev/null && c start backend && echo restored ;;
   add-admin) [ -n "\${2:-}" ] || { echo "usage: rocketmm add-admin <email> [role]"; exit 2; }; pw=\$(openssl rand -base64 18 | tr -d '/+=' | cut -c1-20); c exec -T -e ADMIN_PASSWORD="\$pw" backend node dist/scripts/create-admin.js "\$2" "\${3:-admin}" && echo "password: \$pw" ;;
-  *) echo "usage: rocketmm status|logs|restart|backup|add-admin <email> [role]" ;;
+  *) echo "usage: rocketmm status|logs|restart|backup|restore <file>|add-admin <email> [role]" ;;
 esac
 HELP
 chmod +x /usr/local/bin/rocketmm
