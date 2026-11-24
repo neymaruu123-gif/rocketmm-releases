@@ -1,8 +1,8 @@
 {
-  "versionCode": 17,
-  "versionName": "0.7.0",
-  "apkUrl": "https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.7.0.apk",
-  "sha256": "5e2a16537ac1cb770d7da7b9defb96754a3dbae1b2dc2c4d4ebee0298e4c3353",
-  "notes": "New Connect page: choose servers from the list, Update config, DNS and VIP Member buttons. No access token needed. Server and app updates arrive as a popup and download inside the app, also while the VPN is connected.\nIf you have RocketMM 0.6.0 or older, uninstall it once before installing 0.7.0 (new signing key).",
+  "versionCode": 18,
+  "versionName": "0.8.0",
+  "apkUrl": "https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.8.0.apk",
+  "sha256": "f10e53372c54585ca2b32bbc9663b7039bb3579f892af2f82db398c2afc55591",
+  "notes": "VIP codes (30/60/90 days), free time + watch ad for 1h 30m, 👑 premium servers",
   "mandatory": false
 }
