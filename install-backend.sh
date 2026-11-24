@@ -16,6 +16,8 @@ set -euo pipefail
 DOMAIN=${DOMAIN:-yethiha101.dpdns.org}
 DIR=${ROCKETMM_DIR:-/opt/rocketmm}
 BUNDLE_URL=${BUNDLE_URL:-https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/backend-bundle.enc}
+# Prebuilt backend image (encrypted like the bundle), so small servers need not run npm/TypeScript builds.
+IMAGE_BASE=${IMAGE_BASE:-https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/backend-image}
 ADMIN_EMAIL=${ADMIN_EMAIL:-admin@$DOMAIN}
 HTTP_PORT=${HTTP_PORT:-80}
 HTTPS_PORT=${HTTPS_PORT:-443}
@@ -113,12 +115,39 @@ ENV
 fi
 chmod 600 "$DIR/.env"
 
+# ---- 5b. backend image: download the prebuilt one for this exact version (fallback: build here)
+VER=$(cat "$DIR/VERSION" 2>/dev/null || echo local)
+use_prebuilt=0
+if docker image inspect "rocketmm-backend:$VER" >/dev/null 2>&1; then
+  use_prebuilt=1
+elif [ -n "${IMAGE_FILE:-}" ]; then
+  say "Loading the backend image"
+  gunzip -c "$IMAGE_FILE" | docker load >/dev/null && use_prebuilt=1
+elif [ -n "${BUNDLE_KEY:-}" ] && [ -z "${ROCKETMM_FORCE_BUILD:-}" ]; then
+  say "Downloading the prebuilt backend ($VER)"
+  # stored as <90 MB parts (GitHub file limit): rocketmm-backend-<ver>.enc.part-aa, -ab, …
+  : > "$tmp/image.enc"
+  for p in aa ab ac ad ae af ag ah; do
+    curl -fsL --retry 3 "$IMAGE_BASE/rocketmm-backend-$VER.enc.part-$p" >> "$tmp/image.enc" 2>/dev/null || break
+  done
+  if [ -s "$tmp/image.enc" ] \
+     && BUNDLE_KEY="$BUNDLE_KEY" openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass env:BUNDLE_KEY -in "$tmp/image.enc" 2>/dev/null | gunzip -c | docker load >/dev/null; then
+    use_prebuilt=1
+  else
+    echo "No prebuilt image for $VER - building on this server instead (needs ~1.5 GB RAM incl. swap)."
+  fi
+  rm -f "$tmp/image.enc"
+fi
+docker image inspect "rocketmm-backend:$VER" >/dev/null 2>&1 || use_prebuilt=0
+if grep -q '^BACKEND_TAG=' "$DIR/.env"; then sed -i "s/^BACKEND_TAG=.*/BACKEND_TAG=$VER/" "$DIR/.env"; else echo "BACKEND_TAG=$VER" >> "$DIR/.env"; fi
+export BACKEND_TAG=$VER
+
 # ---- 6. start
 if command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q 'Status: active'; then
   ufw allow "$HTTP_PORT"/tcp >/dev/null; ufw allow "$HTTPS_PORT"/tcp >/dev/null
 fi
 say "Building and starting (first time takes a few minutes)"
-build_flag=--build; [ -z "${ROCKETMM_NO_BUILD:-}" ] || build_flag=--no-build   # tests only: use a prebuilt image
+build_flag=--build; [ -z "${ROCKETMM_NO_BUILD:-}" ] && [ $use_prebuilt = 0 ] || build_flag=--no-build
 if [ -n "${RESTORE_SQL:-}" ]; then
   say "Restoring the database backup"
   compose --env-file "$DIR/.env" up -d db
