@@ -1,8 +1,8 @@
 {
-  "versionCode": 11,
-  "versionName": "0.4.5",
-  "apkUrl": "https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.4.5.apk",
-  "sha256": "ae4aa0ca688e17f253913b852cde8a2d78d30d99b0ce0898d9c7b9cba0189387",
-  "notes": "Update check and server sync now work through the VPN (free-data networks). Faster update check with Cancel.",
+  "versionCode": 17,
+  "versionName": "0.7.0",
+  "apkUrl": "https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.7.0.apk",
+  "sha256": "5e2a16537ac1cb770d7da7b9defb96754a3dbae1b2dc2c4d4ebee0298e4c3353",
+  "notes": "New Connect page: choose servers from the list, Update config, DNS and VIP Member buttons. No access token needed. Server and app updates arrive as a popup and download inside the app, also while the VPN is connected.\nIf you have RocketMM 0.6.0 or older, uninstall it once before installing 0.7.0 (new signing key).",
   "mandatory": false
 }
