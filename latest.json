@@ -1,8 +1,8 @@
 {
-  "versionCode": 113,
-  "versionName": "0.8.1 (113)",
-  "apkUrl": "https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.8.1-113.apk",
-  "sha256": "382d65ba5d5286f553e407d0ea122a743c636ce0d25ab16d28f545dd4eccb3ad",
-  "notes": "1-day free VIP trial for new phones; free servers with daily free data; ads removed.",
+  "versionCode": 116,
+  "versionName": "0.8.1 (116)",
+  "apkUrl": "https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.8.1-116.apk",
+  "sha256": "c8e38287b403afb8cb4aac1625039f840bb21e8855d574ca6cc133fc445f01ef",
+  "notes": "New design, network tabs (Dtac / TrueMove / AIS / Myanmar Wifi), free data card.",
   "mandatory": false
 }
