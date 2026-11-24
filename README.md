@@ -1,6 +1,14 @@
-# RocketMM downloads
+# VPN panel + app — downloads
 
-**Latest:** [RocketMM-0.4.5.apk](https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.4.5.apk)
+**One VPS, everything:** admin panel, VLESS / VMess (WebSocket, 443 TLS + 80), SSH (WebSocket 443 + 80, and port 22),
+plus your own branded Android app built on GitHub.
 
-The app checks `latest.json` in this repository for updates (Settings → Check for updates),
-verifies the SHA-256 of the download and installs it. Only APKs signed with the RocketMM key install.
+```bash
+curl -fsSL https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/vpn-panel.sh -o vpn-panel.sh
+sudo BUNDLE_KEY=<your bundle key> bash vpn-panel.sh
+```
+
+It asks for the VPN name and the panel domain, then does the rest. Run it again to update.
+
+Other files: `vpn-builder.sh` (Mac app builder), `install-backend.sh` (older panel-only installer),
+`RocketMM-*.apk` + `latest.json` (RocketMM app updates).
