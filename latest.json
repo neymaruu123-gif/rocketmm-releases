@@ -1,8 +1,8 @@
 {
-  "versionCode": 18,
-  "versionName": "0.8.0",
-  "apkUrl": "https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.8.0.apk",
-  "sha256": "f10e53372c54585ca2b32bbc9663b7039bb3579f892af2f82db398c2afc55591",
-  "notes": "VIP codes (30/60/90 days), free time + watch ad for 1h 30m, 👑 premium servers",
+  "versionCode": 19,
+  "versionName": "0.8.1",
+  "apkUrl": "https://raw.githubusercontent.com/neymaruu123-gif/rocketmm-releases/main/RocketMM-0.8.1.apk",
+  "sha256": "3251918de18d3d9ef0e315f0a49a2176bade991852bd084e71fb9a0d51df2505",
+  "notes": "No token needed: all servers listed, free ones usable, 👑 premium locked. Simpler Settings, compact header.",
   "mandatory": false
 }
