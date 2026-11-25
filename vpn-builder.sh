@@ -111,8 +111,10 @@ choose_brand() {
   CONF="$BRAND_DIR/brand.conf"
   mkdir -p "$BRAND_DIR/out"
   if [ -f "$CONF" ]; then
+    local env_style="${UI_STYLE:-}"
     # shellcheck disable=SC1090
     . "$CONF"
+    [ -n "$env_style" ] && UI_STYLE="$env_style"   # UI_STYLE=clean bash vpn-builder.sh <brand>
     bold "Using saved settings for \"$APP_NAME\" ($CONF)"
     local again; ask again "Change any settings? (y/N)" "N"
     case "$again" in y|Y) edit_brand "$APP_NAME" ;; esac
@@ -137,6 +139,8 @@ edit_brand() {
   ask BACKEND_URL "Backend / dashboard URL" "${BACKEND_URL:-$DEFAULT_BACKEND}"
   BACKEND_URL="${BACKEND_URL%/}"
   ask VIP_URL "Telegram link for buying VIP" "${VIP_URL:-https://t.me/}"
+  ask UI_STYLE "Design: neon (dark purple) or clean (white / blue)" "${UI_STYLE:-clean}"
+  [ "$UI_STYLE" = "neon" ] || UI_STYLE=clean
   ask PUBLISH "Publish updates to GitHub (in-app update popup)? (y/n)" "${PUBLISH:-y}"
   if [ "$PUBLISH" = "y" ] || [ "$PUBLISH" = "Y" ]; then
     ask RELEASE_REPO "Public GitHub repo for releases" "${RELEASE_REPO:-$SLUG-releases}"
@@ -152,6 +156,7 @@ save_conf() {
     printf 'APP_NAME=%q\nAPP_ID=%q\nLOGO=%q\nLOGO_STYLE=%q\nICON_BG=%q\n' "$APP_NAME" "$APP_ID" "${LOGO:-}" "${LOGO_STYLE:-1}" "${ICON_BG:-#2E1065}"
     printf 'BACKEND_URL=%q\nVIP_URL=%q\nPUBLISH=%q\nRELEASE_REPO=%q\nVERSION_NAME=%q\nBUILD_NO=%q\n' \
       "$BACKEND_URL" "$VIP_URL" "${PUBLISH:-n}" "${RELEASE_REPO:-}" "$VERSION_NAME" "$BUILD_NO"
+    printf 'UI_STYLE=%q\n' "${UI_STYLE:-neon}"
   } > "$CONF"
 }
 
@@ -230,7 +235,7 @@ build_apk() {
   fi
   apply_brand
   (cd "$SRC/android" && ./gradlew --no-daemon --console=plain :app:assembleRelease \
-      -PappId="$APP_ID" -PappName="$APP_NAME" -PbrandLogo="$BRAND_LOGO" \
+      -PappId="$APP_ID" -PappName="$APP_NAME" -PbrandLogo="$BRAND_LOGO" -PuiStyle="${UI_STYLE:-neon}" \
       -PbackendUrl="$BACKEND_URL" -PmanifestPublicKey="$MANIFEST_KEY" -PvipContactUrl="$VIP_URL" \
       -PupdateUrl="$UPDATE_URL" -PversionNameOverride="$VERSION_NAME" -PversionCodeOverride="$code")
   rm -f "$SRC/android/keystore.properties"
