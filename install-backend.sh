@@ -114,6 +114,8 @@ MANIFEST_SIGNING_KEY=$MANIFEST_SIGNING_KEY
 ENV
 fi
 chmod 600 "$DIR/.env"
+# show the domain this server really uses (an update keeps the one in .env)
+d=$(grep -m1 '^DOMAIN=' "$DIR/.env" | cut -d= -f2-); [ -z "$d" ] || DOMAIN=$d
 
 # ---- 5b. backend image: download the prebuilt one for this exact version (fallback: build here)
 VER=$(cat "$DIR/VERSION" 2>/dev/null || echo local)
