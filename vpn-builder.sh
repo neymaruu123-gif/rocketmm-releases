@@ -251,12 +251,14 @@ publish() {
     gh repo create "$GH_USER/$RELEASE_REPO" --public -d "$APP_NAME downloads" >/dev/null
     ok "Created public repo $GH_USER/$RELEASE_REPO"
   fi
-  if [ -d "$dir/.git" ]; then git -C "$dir" pull -q || true
+  if [ -d "$dir/.git" ]; then git -C "$dir" merge --abort >/dev/null 2>&1; git -C "$dir" fetch -q origin 2>/dev/null || true
   else
     rm -rf "$dir"; gh repo clone "$GH_USER/$RELEASE_REPO" "$dir" -- -q 2>/dev/null || { mkdir -p "$dir"; git -C "$dir" init -q -b main; git -C "$dir" remote add origin "https://github.com/$GH_USER/$RELEASE_REPO.git"; }
   fi
-  (cd "$dir" && git rm -q --ignore-unmatch ./*.apk >/dev/null 2>&1 || true)
+  # keep only the newest version: a fresh one-commit history, so old APKs don't pile up in the repo
+  (cd "$dir" && { git branch -D publish-new >/dev/null 2>&1; true; } && git checkout -q --orphan publish-new && git rm -rqf --cached . >/dev/null 2>&1; rm -f ./*.apk .DS_Store) || true
   cp "$APK" "$dir/"
+  printf '.DS_Store\n' > "$dir/.gitignore"
   cat > "$dir/latest.json" <<EOF
 {
   "versionCode": $CODE,
@@ -267,7 +269,10 @@ publish() {
   "mandatory": false
 }
 EOF
-  (cd "$dir" && git add -A && git -c user.name="$GH_USER" -c user.email="$GH_USER@users.noreply.github.com" commit -q -m "$APP_NAME $VERSION_NAME ($CODE)" && git push -q -u origin HEAD:main)
+  (cd "$dir" && git add -A && git -c user.name="$GH_USER" -c user.email="$GH_USER@users.noreply.github.com" commit -q -m "$APP_NAME $VERSION_NAME ($CODE)" \
+    && git branch -q -M main && git push -q -f -u origin main \
+    && { git reflog expire --expire=now --all; git gc -q --prune=now; } 2>/dev/null) || die "Publishing to GitHub failed"
+  ok "Old versions removed from $RELEASE_REPO (only $VERSION_NAME is kept)"
   ok "Published. Download link:"
   echo "    $url"
 }
