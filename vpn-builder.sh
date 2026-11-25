@@ -256,7 +256,7 @@ publish() {
     gh repo create "$GH_USER/$RELEASE_REPO" --public -d "$APP_NAME downloads" >/dev/null
     ok "Created public repo $GH_USER/$RELEASE_REPO"
   fi
-  if [ -d "$dir/.git" ]; then git -C "$dir" merge --abort >/dev/null 2>&1; git -C "$dir" fetch -q origin 2>/dev/null || true
+  if [ -d "$dir/.git" ]; then git -C "$dir" merge --abort >/dev/null 2>&1 || true; git -C "$dir" fetch -q origin 2>/dev/null || true
   else
     rm -rf "$dir"; gh repo clone "$GH_USER/$RELEASE_REPO" "$dir" -- -q 2>/dev/null || { mkdir -p "$dir"; git -C "$dir" init -q -b main; git -C "$dir" remote add origin "https://github.com/$GH_USER/$RELEASE_REPO.git"; }
   fi
@@ -279,7 +279,7 @@ EOF
   (cd "$dir" && git reflog expire --expire=now --all && git gc -q --prune=now) >/dev/null 2>&1 || true
   # check that GitHub really has the new version (what the apps will read)
   local live
-  live="$(gh api "repos/$GH_USER/$RELEASE_REPO/contents/latest.json?ref=main" -q .content 2>/dev/null | base64 --decode 2>/dev/null | sed -n 's/.*"versionCode": *\([0-9]*\).*/\1/p')"
+  live="$( { gh api "repos/$GH_USER/$RELEASE_REPO/contents/latest.json?ref=main" -q .content 2>/dev/null | base64 --decode 2>/dev/null | sed -n 's/.*"versionCode": *\([0-9]*\).*/\1/p'; } || true)"
   [ "$live" = "$CODE" ] || die "GitHub still shows version ${live:-none}, not $CODE. Run again: PUBLISH_ONLY=1 bash $0 \"$SLUG\""
   ok "GitHub now offers $VERSION_NAME ($CODE) — apps show the update popup within a few minutes"
   ok "Old versions removed from $RELEASE_REPO (only $VERSION_NAME is kept)"
