@@ -199,8 +199,8 @@ fi
 chmod 600 "$DIR/settings.env" "$DIR/.env"
 # shellcheck disable=SC1091
 . "$DIR/settings.env"
-for k in BACKEND_IMAGE VLESS_PATH VMESS_PATH SSH_PATH API_PORT; do sed -i "/^$k=/d" "$DIR/.env"; done
-printf 'BACKEND_IMAGE=%s\nVLESS_PATH=%s\nVMESS_PATH=%s\nSSH_PATH=%s\nAPI_PORT=%s\n' "$IMAGE" "$VLESS_PATH" "$VMESS_PATH" "$SSH_PATH" "$API_PORT" >> "$DIR/.env"
+for k in BACKEND_IMAGE VLESS_PATH VMESS_PATH SSH_PATH API_PORT VIP_URL; do sed -i "/^$k=/d" "$DIR/.env"; done
+printf 'BACKEND_IMAGE=%s\nVLESS_PATH=%s\nVMESS_PATH=%s\nSSH_PATH=%s\nAPI_PORT=%s\nVIP_URL=%s\n' "$IMAGE" "$VLESS_PATH" "$VMESS_PATH" "$SSH_PATH" "$API_PORT" "$VIP_URL" >> "$DIR/.env"
 
 cat > "$DIR/xray/config.json" <<EOF
 {

@@ -275,10 +275,15 @@ publish() {
 }
 EOF
   (cd "$dir" && git add -A && git -c user.name="$GH_USER" -c user.email="$GH_USER@users.noreply.github.com" commit -q -m "$APP_NAME $VERSION_NAME ($CODE)" \
-    && git branch -q -M main && git push -q -f -u origin main \
-    && { git reflog expire --expire=now --all; git gc -q --prune=now; } 2>/dev/null) || die "Publishing to GitHub failed"
+    && git branch -q -M main && git push -f -u origin main) || die "Publishing to GitHub failed (see the git message above). Fix it, then: PUBLISH_ONLY=1 bash $0 \"$SLUG\""
+  (cd "$dir" && git reflog expire --expire=now --all && git gc -q --prune=now) >/dev/null 2>&1 || true
+  # check that GitHub really has the new version (what the apps will read)
+  local live
+  live="$(gh api "repos/$GH_USER/$RELEASE_REPO/contents/latest.json?ref=main" -q .content 2>/dev/null | base64 --decode 2>/dev/null | sed -n 's/.*"versionCode": *\([0-9]*\).*/\1/p')"
+  [ "$live" = "$CODE" ] || die "GitHub still shows version ${live:-none}, not $CODE. Run again: PUBLISH_ONLY=1 bash $0 \"$SLUG\""
+  ok "GitHub now offers $VERSION_NAME ($CODE) — apps show the update popup within a few minutes"
   ok "Old versions removed from $RELEASE_REPO (only $VERSION_NAME is kept)"
-  ok "Published. Download link:"
+  ok "Download link:"
   echo "    $url"
 }
 
@@ -287,6 +292,15 @@ main() {
   setup_tools
   get_source
   choose_brand "${1:-}"
+  if [ "${PUBLISH_ONLY:-}" = "1" ]; then  # publish the APK that was built last, without building again
+    CODE=$((1000 + BUILD_NO))
+    APK_NAME="$(printf '%s' "$APP_NAME" | tr -cd 'A-Za-z0-9')-$VERSION_NAME-$CODE.apk"; APK="$BRAND_DIR/out/$APK_NAME"
+    [ -f "$APK" ] || die "No built APK $APK — build first"
+    SHA="$(shasum -a 256 "$APK" 2>/dev/null | cut -d' ' -f1 || sha256sum "$APK" | cut -d' ' -f1)"
+    GH_USER="$(gh api user -q .login)"; PUBLISH=y
+    publish
+    return
+  fi
   signing_key
   build_apk
   publish
