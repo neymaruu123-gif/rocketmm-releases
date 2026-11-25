@@ -100,6 +100,14 @@ choose_brand() {
   [ -n "$name" ] || die "An app name is needed"
   SLUG="$(slugify "$name")"
   BRAND_DIR="$HOME_DIR/brands/$SLUG"
+  if [ ! -f "$BRAND_DIR/brand.conf" ]; then  # saved under another folder name? match the saved app name
+    local c n
+    for c in "$HOME_DIR"/brands/*/brand.conf; do
+      [ -f "$c" ] || continue
+      n="$( . "$c"; printf '%s' "$APP_NAME")"
+      if [ "$(slugify "$n")" = "$SLUG" ]; then BRAND_DIR="$(dirname "$c")"; SLUG="$(basename "$BRAND_DIR")"; break; fi
+    done
+  fi
   CONF="$BRAND_DIR/brand.conf"
   mkdir -p "$BRAND_DIR/out"
   if [ -f "$CONF" ]; then
@@ -208,7 +216,12 @@ manifest_key() {
 build_apk() {
   step "5/6  Building $APP_NAME"
   manifest_key
-  BUILD_NO=$((BUILD_NO + 1)); save_conf
+  BUILD_NO=$((BUILD_NO + 1))
+  # the version code must be higher than the one on the phones, or Android refuses the update:
+  # VERSION_CODE=1004 bash vpn-builder.sh <brand>   (and VERSION=1.0.3 to set the shown version)
+  if [ -n "${VERSION_CODE:-}" ] && [ "$VERSION_CODE" -gt $((1000 + BUILD_NO)) ] 2>/dev/null; then BUILD_NO=$((VERSION_CODE - 1000)); fi
+  [ -n "${VERSION:-}" ] && VERSION_NAME="$VERSION"
+  save_conf
   local code=$((1000 + BUILD_NO))
   UPDATE_URL=""
   if [ "${PUBLISH:-n}" = "y" ] || [ "${PUBLISH:-n}" = "Y" ]; then
@@ -272,6 +285,6 @@ main() {
   echo "  APK:          $APK"
   echo "  Settings:     $CONF"
   echo "  Signing key:  $KEYSTORE  (+ release.password)  ← keep a backup!"
-  echo "  Rebuild:      bash $0 \"$APP_NAME\""
+  echo "  Rebuild:      bash $0 \"$SLUG\""
 }
 main "$@"
